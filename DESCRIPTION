@@ -1,0 +1,13 @@
+Package: dashSeqviz
+Title: The dash wrapper for SeqViz
+Version: 0.0.1
+Description: The dash wrapper for SeqViz
+Depends: R (>= 3.0.2)
+Imports: 
+Suggests: 
+License: MIT + file LICENSE
+URL: https://github.com/YukiSakamoto/dash-seqviz
+BugReports: https://github.com/YukiSakamoto/dash-seqviz/issues
+Encoding: UTF-8
+LazyData: true
+KeepSource: true
