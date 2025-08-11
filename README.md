@@ -1,98 +1,123 @@
-# Dash SeqViz
+dash_seqviz
+===========
 
-Dash SeqViz is a Dash component library.
+A Dash component wrapping SeqViz, an interactive biological sequence viewer for DNA/RNA visualization.
 
-The dash wrapper for SeqViz
+Features:
+- Linear / circular / both viewers
+- Annotations, primers, translations, enzymes, highlights
+- Selection events exposed to Dash callbacks
+- Zero custom serialization: pure JSON props
 
-Get started with:
-1. Install Dash and its dependencies: https://dash.plotly.com/installation
-2. Run `python usage.py`
-3. Visit http://localhost:8050 in your web browser
+Heads-up: SeqViz requires the container element to have a non-zero height. Always set style={"height": ...} (and usually "width") on the component.
 
-## Contributing
+Installation
+------------
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md)
+From source (recommended for now):
 
-### Install dependencies
+    npm install
+    npm run build
 
-If you have selected install_dependencies during the prompt, you can skip this part.
+    python -m venv .venv && source .venv/bin/activate
+    pip install -e .
 
-1. Install npm packages
-    ```
-    $ npm install
-    ```
-2. Create a virtual env and activate.
-    ```
-    $ virtualenv venv
-    $ . venv/bin/activate
-    ```
-    _Note: venv\Scripts\activate for windows_
+(Later) From PyPI:
 
-3. Install python packages required to build components.
-    ```
-    $ pip install -r requirements.txt
-    ```
-4. Install the python packages for testing (optional)
-    ```
-    $ pip install -r tests/requirements.txt
-    ```
+    pip install dash-seqviz
 
-### Write your component code in `src/lib/components/DashSeqviz.react.js`.
+Quickstart
+----------
 
-- The demo app is in `src/demo` and you will import your example component code into your demo app.
-- Test your code in a Python environment:
-    1. Build your code
-        ```
-        $ npm run build
-        ```
-    2. Run and modify the `usage.py` sample dash app:
-        ```
-        $ python usage.py
-        ```
-- Write tests for your component.
-    - A sample test is available in `tests/test_usage.py`, it will load `usage.py` and you can then automate interactions with selenium.
-    - Run the tests with `$ pytest tests`.
-    - The Dash team uses these types of integration tests extensively. Browse the Dash component code on GitHub for more examples of testing (e.g. https://github.com/plotly/dash-core-components)
-- Add custom styles to your component by putting your custom CSS files into your distribution folder (`dash_seqviz`).
-    - Make sure that they are referenced in `MANIFEST.in` so that they get properly included when you're ready to publish your component.
-    - Make sure the stylesheets are added to the `_css_dist` dict in `dash_seqviz/__init__.py` so dash will serve them automatically when the component suite is requested.
-- [Review your code](./review_checklist.md)
+    import dash
+    from dash import html, Output, Input
+    import dash_seqviz as dsv
 
-### Create a production build and publish:
+    app = dash.Dash(__name__)
+    app.layout = html.Div([
+        dsv.SeqvizViewer(
+            id="sv",
+            name="Demo",
+            seq="TTGACGGCTAGCTCAGTCCTAGGTACAGTGCTAGC",
+            annotations=[{"start": 0, "end": 34, "name": "promoter", "direction": 1}],
+            style={"width": "100%", "height": "420px", "border": "1px solid #ccc"}
+        ),
+        html.Pre(id="sel")
+    ])
 
-1. Build your code:
-    ```
-    $ npm run build
-    ```
-2. Create a Python distribution
-    ```
-    $ python setup.py sdist bdist_wheel
-    ```
-    This will create source and wheel distribution in the generated the `dist/` folder.
-    See [PyPA](https://packaging.python.org/guides/distributing-packages-using-setuptools/#packaging-your-project)
-    for more information.
+    @app.callback(Output("sel","children"), Input("sv","selection"))
+    def show_selection(sel):
+        return f"selection: {sel}"
 
-3. Test your tarball by copying it into a new environment and installing it locally:
-    ```
-    $ pip install dash_seqviz-0.0.1.tar.gz
-    ```
+    if __name__ == "__main__":
+        app.run(debug=True)
 
-4. If it works, then you can publish the component to NPM and PyPI:
-    1. Publish on PyPI
-        ```
-        $ twine upload dist/*
-        ```
-    2. Cleanup the dist folder (optional)
-        ```
-        $ rm -rf dist
-        ```
-    3. Publish on NPM (Optional if chosen False in `publish_on_npm`)
-        ```
-        $ npm publish
-        ```
-        _Publishing your component to NPM will make the JavaScript bundles available on the unpkg CDN. By default, Dash serves the component library's CSS and JS locally, but if you choose to publish the package to NPM you can set `serve_locally` to `False` and you may see faster load times._
+Props (subset)
+--------------
 
-5. Share your component with the community! https://community.plotly.com/c/dash
-    1. Publish this repository to GitHub
-    2. Tag your GitHub repository with the plotly-dash tag so that it appears here: https://github.com/topics/plotly-dash
-    3. Create a post in the Dash community forum: https://community.plotly.com/c/dash
+id: string  
+className: string  
+style: object - Inline styles for wrapper. Must set height.  
+seq: string - Nucleotide sequence (A/C/G/T/U/N...)  
+name: string - Display name of the sequence  
+viewer: "linear" | "circular" | "both" | "both_flip"  
+annotations: array of Annotation objects  
+primers: array of Primer objects  
+translations: array of Translation objects  
+enzymes: array of string or Enzyme objects  
+highlights: array of Highlight objects  
+zoom: object { start?: number, end?: number }  
+bpColors: object { A?: string, C?: string, G?: string, T?: string, U?: string }  
+selection: object { start: number, end: number, clockwise?: boolean }  
+
+Development
+-----------
+
+Dev server (demo page):
+
+    npm start
+
+Build JS bundle + generate Python bindings:
+
+    npm run build
+
+Python side (editable install):
+
+    pip install -e .
+
+File map:
+- src/lib/components/DashSeqviz.react.js : React wrapper (function component)
+- src/lib/index.js : Exports
+- dash_seqviz/ : Python package (includes built .min.js)
+
+Releasing
+---------
+
+1. Bump version in package.json
+2. Build and commit bundles:
+
+       npm run build
+       git add -A
+       git commit -m "release: vX.Y.Z"
+       git tag vX.Y.Z
+       git push origin main --tags
+
+3. (Optional) Publish to PyPI:
+
+       python -m pip install build twine
+       python -m build
+       twine upload dist/*
+
+Troubleshooting
+---------------
+
+- Blank view: container has zero height. Set style={"height": 420}.
+- "Invalid hook call": Remove react / react-dom from dependencies; keep in peerDependencies.
+- Prop not reaching Python: Declare it in propTypes; rebuild and pip install -e . again.
+- Dev vs Dash mismatch: npm start is the demo only; Dash app uses the built bundle.
+
+License
+-------
+
+MIT
+
